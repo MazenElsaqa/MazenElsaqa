@@ -22,3 +22,12 @@
 [![](https://komarev.com/ghpvc/?username=MazenElsaqa&icon=3&color=5)](https://visitcount.itsvg.in)
 
 <!-- Proudly created with GPRM ( https://gprm.itsvg.in ) -->
+
+
+<a href="https://www.gitascii.com">
+  <img
+    src="https://www.gitascii.com/api/MazenElsaqa?v=1787010156871"
+    alt="GitAscii Widget"
+    width="100%"
+  />
+</a>
