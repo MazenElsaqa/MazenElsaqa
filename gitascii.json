@@ -137,10 +137,11 @@
       },
       "config": {
         "showTitle": true,
-        "hideBorder": true
+        "hideBorder": true,
+        "disabledReason": "Rendered as a direct README image for GitHub compatibility"
       },
       "locked": false,
-      "visible": true,
+      "visible": false,
       "zIndex": 5
     },
     {
@@ -20751,10 +20752,11 @@
         "height": 40
       },
       "config": {
-        "accentColor": "#3A88FE"
+        "accentColor": "#3A88FE",
+        "disabledReason": "Duplicate divider removed from composite layout"
       },
       "locked": false,
-      "visible": true,
+      "visible": false,
       "zIndex": 11
     },
     {
@@ -62723,10 +62725,11 @@
         "height": 40
       },
       "config": {
-        "accentColor": "#3A88FE"
+        "accentColor": "#3A88FE",
+        "disabledReason": "Duplicate divider removed from composite layout"
       },
       "locked": false,
-      "visible": true,
+      "visible": false,
       "zIndex": 14
     },
     {
@@ -62750,10 +62753,11 @@
         "layout": "horizontal",
         "animationType": "slide-left",
         "animationPreviewKey": 10,
-        "lockAspectRatio": true
+        "lockAspectRatio": true,
+        "disabledReason": "Rendered as a direct README image for GitHub compatibility"
       },
       "locked": false,
-      "visible": true,
+      "visible": false,
       "zIndex": 15
     },
     {
