@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+concurrency:
+  group: profile-profile-assets
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
