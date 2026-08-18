@@ -93,9 +93,86 @@ if card_start >= 0 and card_style_id not in svg:
     card_css = f'''\n<style id="{card_style_id}">\n  @keyframes pokemon-card-glow-widget_1787002149452 {{\n    0%, 100% {{\n      stroke: #ff6b9d;\n      stroke-opacity: 0.72;\n      filter: drop-shadow(0 0 2px rgba(255, 107, 157, 0.38));\n    }}\n    25% {{\n      stroke: #ffd166;\n      stroke-opacity: 0.82;\n      filter: drop-shadow(0 0 2px rgba(255, 209, 102, 0.40));\n    }}\n    50% {{\n      stroke: #5eead4;\n      stroke-opacity: 0.78;\n      filter: drop-shadow(0 0 2px rgba(94, 234, 212, 0.38));\n    }}\n    75% {{\n      stroke: #a78bfa;\n      stroke-opacity: 0.84;\n      filter: drop-shadow(0 0 2px rgba(167, 139, 250, 0.42));\n    }}\n  }}\n\n  #{card_widget_id} .pokemon-card-border {{\n    animation: pokemon-card-glow-widget_1787002149452 8s ease-in-out infinite;\n    transform-box: fill-box;\n    transform-origin: center;\n    will-change: filter, opacity;\n  }}\n\n  #{card_widget_id} .pokemon-card-border:hover {{\n    animation-play-state: paused;\n    stroke: #ffffff;\n    stroke-opacity: 1;\n    stroke-width: 2.2;\n    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.78));\n  }}\n\n  @media (prefers-reduced-motion: reduce) {{\n    #{card_widget_id} .pokemon-card-border {{\n      animation: none;\n      stroke: rgba(255, 255, 255, 0.48);\n      stroke-opacity: 1;\n      filter: none;\n    }}\n  }}\n</style>\n'''
     svg = svg[:svg.rfind("</svg>")] + card_css + svg[svg.rfind("</svg>"):]
 
+# Remove only keyframes that have no CSS or inline-style reference anywhere in
+# the document. GitAscii emits a full animation preset for each widget, even
+# when a widget uses just one preset animation. Keeping the allowlist derived
+# from actual references avoids touching Snake, marquee, globe, neural motion,
+# chart animations, or the Pokémon glow.
+def collect_keyframe_usage(document):
+    style_blocks = re.findall(
+        r'<style\b[^>]*>(.*?)</style>',
+        document,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    css = "\n".join(style_blocks)
+    names = list(dict.fromkeys(re.findall(r'@keyframes\s+([\w-]+)', css, flags=re.IGNORECASE)))
+    used = set()
+    animation_values = re.findall(
+        r'animation(?:-name)?\s*:\s*([^;{}]+)',
+        css,
+        flags=re.IGNORECASE,
+    )
+    animation_values += re.findall(
+        r'<[^>]+\bstyle="([^"]+)"[^>]*>',
+        document,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    for value in animation_values:
+        for name in names:
+            if re.search(rf'(?<![\w-]){re.escape(name)}(?![\w-])', value):
+                used.add(name)
+    return names, used
+
+
+def remove_unused_keyframes(css, unused_names):
+    output = []
+    cursor = 0
+    removed = []
+    header = re.compile(r'@keyframes\s+([\w-]+)\s*\{', re.IGNORECASE)
+    while True:
+        match = header.search(css, cursor)
+        if not match:
+            output.append(css[cursor:])
+            break
+        output.append(css[cursor:match.start()])
+        depth = 0
+        end = None
+        for index in range(match.end() - 1, len(css)):
+            if css[index] == '{':
+                depth += 1
+            elif css[index] == '}':
+                depth -= 1
+                if depth == 0:
+                    end = index + 1
+                    break
+        if end is None:
+            output.append(css[match.start():])
+            break
+        name = match.group(1)
+        if name in unused_names:
+            removed.append(name)
+        else:
+            output.append(css[match.start():end])
+        cursor = end
+    return ''.join(output), removed
+
+
+keyframe_names, used_keyframes = collect_keyframe_usage(svg)
+unused_keyframes = set(keyframe_names) - used_keyframes
+removed_keyframes = []
+style_pattern = re.compile(r'(<style\b[^>]*>)(.*?)(</style>)', re.IGNORECASE | re.DOTALL)
+
+def clean_style_block(match):
+    global removed_keyframes
+    body, removed = remove_unused_keyframes(match.group(2), unused_keyframes)
+    removed_keyframes.extend(removed)
+    return match.group(1) + body + match.group(3)
+
+svg = style_pattern.sub(clean_style_block, svg)
+
 if not re.search(r'<svg\b', svg, re.IGNORECASE):
     raise SystemExit("Input is not a valid SVG document")
 
 destination.parent.mkdir(parents=True, exist_ok=True)
 destination.write_text(svg, encoding="utf-8")
-print(f"Tuned {source} -> {destination} ({len(svg.encode('utf-8'))} bytes; neural_motion_kept={motion_index // 2})")
+print(f"Tuned {source} -> {destination} ({len(svg.encode('utf-8'))} bytes; neural_motion_kept={motion_index // 2}; unused_keyframes_removed={len(removed_keyframes)})")
