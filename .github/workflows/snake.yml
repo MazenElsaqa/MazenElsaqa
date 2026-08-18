@@ -17,6 +17,13 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Check out profile repository
+        uses: actions/checkout@v4
+
+      - name: Validate original full-width layout
+        shell: bash
+        run: python3 .github/scripts/validate-layout.py
+
       - name: Generate contribution snake SVGs
         uses: Platane/snk/svg-only@v3
         with:
@@ -24,6 +31,18 @@ jobs:
           outputs: |
             dist/github-contribution-grid-snake.svg
             dist/github-contribution-grid-snake-dark.svg?palette=github-dark
+
+      - name: Generate complete dark and light profile canvases
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          curl --fail --silent --show-error --location \
+            "https://www.gitascii.com/api/MazenElsaqa?theme=dark&v=${GITHUB_SHA}" \
+            --output /tmp/profile-source.svg
+          python3 .github/scripts/compose-profile.py /tmp/profile-source.svg /tmp/profile-composite.svg
+          cp /tmp/profile-composite.svg dist/profile-dark.svg
+          python3 .github/scripts/make-light-svg.py /tmp/profile-composite.svg dist/profile-light.svg
 
       - name: Publish generated SVGs to output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
