@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Create a light-mode variant without changing the profile layout or widget geometry."""
 from pathlib import Path
+import html
 import re
 import sys
 
@@ -72,7 +73,26 @@ start = svg.find(art_start)
 end = svg.find(art_end, start + len(art_start)) if start >= 0 else -1
 if start >= 0 and end > start:
     art = svg[start:end]
-    art = art.replace('#1f2937', '#7F1D1D')
+    # Use two theme-compatible tones instead of one flat color. Dense ASCII
+    # lines carry facial features and shadows; sparse lines become highlights.
+    dark_detail = '#0F172A'   # midnight navy for eyes, hair, and facial structure
+    light_highlight = '#6D28D9'  # royal violet highlight with stronger contrast
+    density_cutoff = 0.25
+
+    def recolor_ascii_line(match):
+        opening, content, closing = match.groups()
+        plain = html.unescape(re.sub(r'<[^>]+>', '', content))
+        density = sum(not char.isspace() for char in plain) / max(1, len(plain))
+        color = dark_detail if density >= density_cutoff else light_highlight
+        opening = re.sub(r'fill="#1f2937"', f'fill="{color}"', opening, flags=re.IGNORECASE)
+        return opening + content + closing
+
+    art = re.sub(
+        r'(<text\b[^>]*?fill="#1f2937"[^>]*>)(.*?)(</text>)',
+        recolor_ascii_line,
+        art,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
     svg = svg[:start] + art + svg[end:]
 
 # Apply warm white to the entire light canvas, not only to card surfaces.
