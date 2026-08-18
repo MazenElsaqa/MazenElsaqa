@@ -11,17 +11,17 @@ svg = source.read_text(encoding="utf-8")
 # Dark surfaces used by the composite widgets. Keep this deliberately narrow so
 # accent colors and ASCII artwork remain unchanged.
 surface_colors = {
-    "#0d1117": "#ffffff",
-    "#0D1117": "#ffffff",
-    "#151c25": "#ffffff",
-    "#0b0f14": "#ffffff",
-    "#0B0F14": "#ffffff",
-    "#080B10": "#ffffff",
-    "#0B1026": "#ffffff",
-    "#1e1e2e": "#ffffff",
-    "#151515": "#ffffff",
-    "#161b22": "#ffffff",
-    "#1b1f23": "#ffffff",
+    "#0d1117": "#FFF8F6",
+    "#0D1117": "#FFF8F6",
+    "#151c25": "#FFF8F6",
+    "#0b0f14": "#FFF8F6",
+    "#0B0F14": "#FFF8F6",
+    "#080B10": "#FFF8F6",
+    "#0B1026": "#FFF8F6",
+    "#1e1e2e": "#FFF8F6",
+    "#151515": "#FFF8F6",
+    "#161b22": "#FFF8F6",
+    "#1b1f23": "#FFF8F6",
     "#313244": "#e5e7eb",
 }
 
@@ -72,8 +72,16 @@ start = svg.find(art_start)
 end = svg.find(art_end, start + len(art_start)) if start >= 0 else -1
 if start >= 0 and end > start:
     art = svg[start:end]
-    art = art.replace('#1f2937', '#dc2626')
+    art = art.replace('#1f2937', '#8B1E3F')
     svg = svg[:start] + art + svg[end:]
+
+# Apply warm white to the entire light canvas, not only to card surfaces.
+# Insert it after the outermost SVG opening tag so all existing geometry remains
+# untouched and the dark-mode asset is unaffected.
+root_match = re.search(r'<svg\b[^>]*>', svg, re.IGNORECASE)
+if root_match:
+    background = '<rect width="100%" height="100%" fill="#FFF8F6"/>\n'
+    svg = svg[:root_match.end()] + background + svg[root_match.end():]
 
 # The source SVG is already self-contained. Keep its dimensions and geometry
 # untouched; only ensure the output remains an SVG document.
