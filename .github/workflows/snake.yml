@@ -45,9 +45,8 @@ jobs:
             "https://www.gitascii.com/api/MazenElsaqa?theme=dark&v=${GITHUB_SHA}" \
             --output /tmp/profile-source.svg
           python3 .github/scripts/compose-profile.py /tmp/profile-source.svg /tmp/profile-composite.svg
-          python3 .github/scripts/optimize-svg.py /tmp/profile-composite.svg dist/profile-dark.svg
-          python3 .github/scripts/make-light-svg.py /tmp/profile-composite.svg /tmp/profile-light-preoptimized.svg
-          python3 .github/scripts/optimize-svg.py /tmp/profile-light-preoptimized.svg dist/profile-light.svg
+          cp /tmp/profile-composite.svg dist/profile-dark.svg
+          python3 .github/scripts/make-light-svg.py /tmp/profile-composite.svg dist/profile-light.svg
 
       - name: Publish generated SVGs to output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
