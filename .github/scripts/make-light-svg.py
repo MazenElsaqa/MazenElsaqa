@@ -63,6 +63,19 @@ svg = re.sub(
     flags=re.IGNORECASE,
 )
 
+# Recolor only the portrait widget for light mode. The original artwork uses
+# #00c7fc for its ASCII pixels; on a white canvas, a deep red creates the
+# requested red/white contrast without changing any other widget.
+portrait_start = '<g transform="translate(0, 1246)" id="widget-widget_1787002080734">'
+portrait_end = '<g transform="translate(32, 482)" id="widget-widget_1787002149452">'
+start = svg.find(portrait_start)
+end = svg.find(portrait_end, start + len(portrait_start)) if start >= 0 else -1
+if start >= 0 and end > start:
+    portrait = svg[start:end]
+    portrait = portrait.replace('#00c7fc', '#dc2626')
+    portrait = portrait.replace('#00C7FC', '#dc2626')
+    svg = svg[:start] + portrait + svg[end:]
+
 # The source SVG is already self-contained. Keep its dimensions and geometry
 # untouched; only ensure the output remains an SVG document.
 if not re.search(r"<svg\b", svg, re.IGNORECASE):
