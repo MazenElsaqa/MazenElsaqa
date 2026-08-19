@@ -44,11 +44,36 @@ jobs:
           curl --fail --silent --show-error --location \
             "https://www.gitascii.com/api/MazenElsaqa?theme=dark&v=${GITHUB_SHA}" \
             --output /tmp/profile-source.svg
-          python3 .github/scripts/compose-profile.py /tmp/profile-source.svg /tmp/profile-composite.svg
+          python3 .github/scripts/repair-failed-widgets.py \
+            /tmp/profile-source.svg \
+            .github/assets/widget-fallback-dark.svg \
+            /tmp/profile-repaired-source.svg
+          python3 .github/scripts/compose-profile.py /tmp/profile-repaired-source.svg /tmp/profile-composite.svg
           python3 .github/scripts/tune-svg-performance.py /tmp/profile-composite.svg /tmp/profile-dark-tuned.svg
           cp /tmp/profile-dark-tuned.svg dist/profile-dark.svg
           python3 .github/scripts/make-light-svg.py /tmp/profile-composite.svg /tmp/profile-light-pre-tuned.svg
           python3 .github/scripts/tune-svg-performance.py /tmp/profile-light-pre-tuned.svg dist/profile-light.svg
+
+      - name: Validate generated widgets before publishing
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q 'Failed to load widget' dist/profile-dark.svg dist/profile-light.svg; then
+            echo 'A generated widget is still showing Failed to load widget.' >&2
+            exit 1
+          fi
+          if grep -q 'assets.tcgdex.net' dist/profile-dark.svg dist/profile-light.svg; then
+            echo 'Pokémon card still contains an external tcgdex image URL.' >&2
+            exit 1
+          fi
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          for path in ('dist/profile-dark.svg', 'dist/profile-light.svg'):
+              ET.parse(path)
+              print(f'XML OK: {path}')
+          PY
+          python3 .github/scripts/validate-layout.py dist/profile-dark.svg
+          python3 .github/scripts/validate-layout.py dist/profile-light.svg
 
       - name: Publish generated SVGs to output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
